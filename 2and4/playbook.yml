@@ -1,0 +1,34 @@
+- hosts: "nginx"
+  serial: 120
+  become: yes
+  tasks:
+    - name: Deploy new nginx config
+      block:
+        - name: Copy config to its place
+          copy:
+            src: nginx.conf
+            dest: /etc/nginx/nginx.conf
+            mode: 0644
+            owner: root
+            group: root
+        - name: check nginx configuration
+          command: nginx -t
+        - name: reload nginx config
+          systemd:
+            name: nginx
+            state: reloaded
+      tags:
+        - never
+        - nginx
+
+    - name: mount directory
+      ansible.posix.mount:
+        path: /boott
+        state: remounted
+      register: result
+      until: not result.failed
+      retries: 60
+      delay: 1
+      tags:
+        - never
+        - remount
